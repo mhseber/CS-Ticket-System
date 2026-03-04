@@ -1,26 +1,27 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { ArrowRight, CheckCircle2, LayoutGrid, Clock } from "lucide-react";
 
 const CTicket = ({ setInProgressCount, setResolvedCount }) => {
   const [tickets, setTickets] = useState([]);
   const [taskStatus, setTaskStatus] = useState([]);
   const [resolvedTasks, setResolvedTasks] = useState([]);
 
-  // ডাটা ফেচিং
   useEffect(() => {
     const loadTickets = async () => {
       try {
         const response = await fetch("/ticket.JSON");
         const data = await response.json();
         setTickets(data);
-      } catch (error) {
+      } catch (err) {
+        // Red underline সরানোর জন্য error variable টি কনসোলে ব্যবহার করা হলো
+        console.error("Fetch Error:", err);
         toast.error("Failed to load tickets!");
       }
     };
     loadTickets();
   }, []);
 
-  // ১. টিকেট ইন-প্রগ্রেসে যোগ করা
   const handleAddToStatus = (ticket) => {
     const isExist = taskStatus.find((item) => item.id === ticket.id);
     const isResolved = resolvedTasks.find((item) => item.id === ticket.id);
@@ -33,93 +34,119 @@ const CTicket = ({ setInProgressCount, setResolvedCount }) => {
     if (!isExist) {
       setTaskStatus([...taskStatus, ticket]);
       setInProgressCount((prev) => prev + 1);
-      toast.success(`Started working on: ${ticket.title}`, {
-        style: {
-          border: "1px solid #22c55e",
-          padding: "16px",
-          color: "#166534",
-        },
-        iconTheme: { primary: "#22c55e", secondary: "#FFFAEE" },
-      });
+      toast.success(`Active: ${ticket.title}`);
     } else {
-      toast("This ticket is already in progress!", { icon: "⚠️" });
+      toast("Already in progress!", { icon: "⚠️" });
     }
   };
 
-  // ২. টিকেট কমপ্লিট করা
   const handleComplete = (task) => {
-    // ইন-প্রগ্রেস থেকে রিমুভ করা
-    const remainingTasks = taskStatus.filter((item) => item.id !== task.id);
-    setTaskStatus(remainingTasks);
-
-    // রিজলভড সেকশনে যোগ করা
+    setTaskStatus(taskStatus.filter((item) => item.id !== task.id));
     setResolvedTasks([...resolvedTasks, task]);
-
-    // কাউন্ট আপডেট
     setInProgressCount((prev) => prev - 1);
     setResolvedCount((prev) => prev + 1);
 
-    toast.success("Task marked as Resolved!", {
-      duration: 3000,
-      position: "top-right",
-      style: { background: "#9333ea", color: "#fff" },
+    toast.success("Task Resolved Successfully!", {
+      style: { background: "#7c3aed", color: "#fff" },
     });
   };
 
   return (
-    <div className="px-4 md:px-10 lg:px-20 py-10 bg-gray-50 min-h-screen">
-      <Toaster position="top-center" reverseOrder={false} />
+    <div className="px-4 md:px-10 lg:px-20 py-16 bg-[#f8fafc] min-h-screen">
+      <Toaster position="top-center" />
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left: Ticket Cards */}
+      <div className="flex flex-col lg:flex-row gap-10 max-w-7xl mx-auto">
+        {/* Left Side: Premium Ticket Cards */}
         <div className="lg:w-2/3">
-          <h2 className="text-2xl font-bold mb-6">Available Tickets</h2>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+              <LayoutGrid size={24} />
+            </div>
+            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+              Ticket Queue
+            </h2>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {tickets.map((ticket) => (
               <div
                 key={ticket.id}
                 onClick={() => handleAddToStatus(ticket)}
-                className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all active:scale-95"
+                className="group relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-400 transition-all duration-300 cursor-pointer overflow-hidden"
               >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="badge badge-ghost text-xs">{ticket.id}</span>
-                  <span className="text-purple-600 font-bold text-xs uppercase">
-                    {ticket.priority}
-                  </span>
+                {/* Decorative background element */}
+                <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-50 rounded-full group-hover:bg-blue-100 transition-colors duration-500"></div>
+
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 bg-slate-100 text-slate-500 rounded-md">
+                      #{ticket.id}
+                    </span>
+                    <span
+                      className={`text-[10px] font-black px-2 py-1 rounded-md ${
+                        ticket.priority === "High"
+                          ? "bg-red-50 text-red-500"
+                          : "bg-emerald-50 text-emerald-600"
+                      }`}
+                    >
+                      {ticket.priority}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors mb-2">
+                    {ticket.title}
+                  </h3>
+
+                  <div className="flex items-center gap-2 text-slate-400 mb-4">
+                    <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-slate-600 font-bold uppercase">
+                      {ticket.customer.charAt(0)}
+                    </div>
+                    <p className="text-sm font-medium">{ticket.customer}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                    <span className="text-xs text-slate-400">
+                      Created Today
+                    </span>
+                    <ArrowRight
+                      className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"
+                      size={18}
+                    />
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-gray-800">
-                  {ticket.title}
-                </h3>
-                <p className="text-gray-500 text-sm mt-2">{ticket.customer}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Right: Status Sections */}
-        <div className="lg:w-1/3 space-y-6">
+        {/* Right Side: Status Sections */}
+        <div className="lg:w-1/3 space-y-8">
           {/* Task Status (In Progress) */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-green-500">
-            <h2 className="text-xl font-bold mb-4">
-              Task Status ({taskStatus.length})
+          <div className="bg-white p-8  shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+            <h2 className="text-xl font-bold mb-6 flex items-center justify-between text-slate-800">
+              In Progress
+              <span className="bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full">
+                {taskStatus.length}
+              </span>
             </h2>
-            <div className="space-y-3">
-              {taskStatus.map((task, index) => (
+            <div className="space-y-4">
+              {taskStatus.map((task) => (
                 <div
                   key={task.id}
-                  className="p-3 bg-gray-50 rounded-lg border border-gray-100"
+                  className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group"
                 >
-                  <p className="font-semibold text-sm mb-2">
-                    {index + 1}. {task.title}
+                  <p className="font-bold text-slate-700 text-sm mb-3 line-clamp-1">
+                    {task.title}
                   </p>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleComplete(task);
                     }}
-                    className="btn btn-success btn-xs w-full text-white"
+                    className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
                   >
-                    Complete
+                    <CheckCircle2 size={14} /> Mark Done
                   </button>
                 </div>
               ))}
@@ -127,27 +154,34 @@ const CTicket = ({ setInProgressCount, setResolvedCount }) => {
           </div>
 
           {/* Resolved Task Section */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-purple-600">
-            <h2 className="text-xl font-bold mb-4 text-purple-700">
-              Resolved Task ({resolvedTasks.length})
+          <div className="bg-white p-8  shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-purple-600"></div>
+            <h2 className="text-xl font-bold mb-6 flex items-center justify-between text-slate-800">
+              Resolved
+              <span className="bg-purple-100 text-purple-700 text-xs px-3 py-1 rounded-full">
+                {resolvedTasks.length}
+              </span>
             </h2>
             <div className="space-y-3">
               {resolvedTasks.length === 0 && (
-                <p className="text-gray-400 text-sm text-center">
-                  No tasks resolved yet.
-                </p>
+                <div className="text-center py-6">
+                  <Clock className="mx-auto text-slate-300 mb-2" size={30} />
+                  <p className="text-slate-400 text-xs italic">
+                    Waiting for completion...
+                  </p>
+                </div>
               )}
-              {resolvedTasks.map((task, index) => (
+              {resolvedTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="p-3 bg-purple-50 rounded-lg flex justify-between items-center"
+                  className="p-3 bg-purple-50/50 rounded-xl flex justify-between items-center border border-purple-100"
                 >
-                  <p className="font-medium text-sm text-purple-800 line-clamp-1">
-                    {index + 1}. {task.title}
+                  <p className="font-medium text-xs text-slate-600 truncate mr-2">
+                    {task.title}
                   </p>
-                  <span className="badge badge-success badge-sm text-white">
-                    Done
-                  </span>
+                  <div className="bg-purple-600 p-1 rounded-full text-white">
+                    <CheckCircle2 size={12} />
+                  </div>
                 </div>
               ))}
             </div>
